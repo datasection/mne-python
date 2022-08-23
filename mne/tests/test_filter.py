@@ -149,8 +149,10 @@ def test_iir_stability():
     pytest.raises(RuntimeError, filter_data, sig, sfreq, 0.6, None,
                   method='iir', iir_params=dict(ftype='butter', order=8,
                                                 output='ba'))
-    # This one should work just fine
+    # These ones should work just fine
     filter_data(sig, sfreq, 0.6, None, method='iir',
+                iir_params=dict(ftype='butter', order=8, output='sos'))
+    filter_data(sig, sfreq, 0.6, None, method='iir', phase='minimum',
                 iir_params=dict(ftype='butter', order=8, output='sos'))
     # bad system type
     pytest.raises(ValueError, filter_data, sig, sfreq, 0.6, None, method='iir',

@@ -421,20 +421,29 @@ def _check_coefficients(system):
                            'coefficients.')
 
 
-def _filtfilt(x, iir_params, picks, n_jobs, copy):
-    """Call filtfilt."""
+def _iir_filter(x, iir_params, picks, n_jobs, copy, phase):
+    """Call filtfilt or lfilter."""
     # set up array for filtering, reshape to 2D, operate on last axis
-    from scipy.signal import filtfilt, sosfiltfilt
-    padlen = min(iir_params['padlen'], x.shape[-1] - 1)
+    from scipy.signal import filtfilt, sosfiltfilt, lfilter, sosfilt
     x, orig_shape, picks = _prep_for_filtering(x, copy, picks)
-    if 'sos' in iir_params:
-        fun = partial(sosfiltfilt, sos=iir_params['sos'], padlen=padlen,
-                      axis=-1)
-        _check_coefficients(iir_params['sos'])
+    if phase in ('zero', 'zero-double'):
+        padlen = min(iir_params['padlen'], x.shape[-1] - 1)
+        if 'sos' in iir_params:
+            fun = partial(sosfiltfilt, sos=iir_params['sos'], padlen=padlen,
+                          axis=-1)
+            _check_coefficients(iir_params['sos'])
+        else:
+            fun = partial(filtfilt, b=iir_params['b'], a=iir_params['a'],
+                          padlen=padlen, axis=-1)
+            _check_coefficients((iir_params['b'], iir_params['a']))
     else:
-        fun = partial(filtfilt, b=iir_params['b'], a=iir_params['a'],
-                      padlen=padlen, axis=-1)
-        _check_coefficients((iir_params['b'], iir_params['a']))
+        if 'sos' in iir_params:
+            fun = partial(sosfilt, sos=iir_params['sos'], axis=-1)
+            _check_coefficients(iir_params['sos'])
+        else:
+            fun = partial(lfilter, b=iir_params['b'], a=iir_params['a'],
+                          axis=-1)
+            _check_coefficients((iir_params['b'], iir_params['a']))
     parallel, p_fun, n_jobs = parallel_func(fun, n_jobs)
     if n_jobs == 1:
         for p in picks:
@@ -817,7 +826,7 @@ def filter_data(data, sfreq, l_freq, h_freq, picks=None, filter_length='auto',
         data = _overlap_add_filter(data, filt, None, phase, picks, n_jobs,
                                    copy, pad)
     else:
-        data = _filtfilt(data, filt, picks, n_jobs, copy)
+        data = _iir_filter(data, filt, picks, n_jobs, copy, phase)
     return data
 
 

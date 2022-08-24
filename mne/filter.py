@@ -420,7 +420,7 @@ def _check_coefficients(system):
                            'coefficients.')
 
 
-def _iir_filter(x, iir_params, picks, n_jobs, copy, phase):
+def _iir_filter(x, iir_params, picks, n_jobs, copy, phase='zero'):
     """Call filtfilt or lfilter."""
     # set up array for filtering, reshape to 2D, operate on last axis
     from scipy.signal import filtfilt, sosfiltfilt, lfilter, sosfilt
